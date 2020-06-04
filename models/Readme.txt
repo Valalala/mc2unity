@@ -1,0 +1,1 @@
+Contains the intermediate models files produced by Mineways. 

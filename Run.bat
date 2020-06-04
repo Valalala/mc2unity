@@ -1,0 +1,1 @@
+REM blender myscene.blend --background --python myscript.py

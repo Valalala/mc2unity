@@ -1,0 +1,1 @@
+This folder contains the experiments I used to test things and learn how to use the apis involved. Also contains examples to show how the workflow works. 

@@ -1,0 +1,1 @@
+Contains the raw Minecraft world folders to be converted. 
