@@ -1,0 +1,6 @@
+
+blender myscene.blend --background --python testBlender.py < input.txt
+
+
+
+

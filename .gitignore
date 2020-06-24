@@ -1,0 +1,8 @@
+
+# Generated Mineways scripts
+*.mwscript
+
+# Generated model files
+*.obj
+*.mtl
+
