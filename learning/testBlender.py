@@ -3,32 +3,45 @@ import bpy
 import time
 
 
+outputFolder = r"D:\Technic\Repositories\mc2unity\results\\"
+
 view_layer = bpy.context.view_layer
 
 # bpy.ops.import_scene.obj('D:\Technic\Repositories\mc2unity\models\Suzanne.obj')
 bpy.ops.import_scene.obj(filepath=r"D:\Technic\Repositories\mc2unity\models\Suzanne.obj", filter_glob="*.obj;*.mtl", use_edges=True, use_smooth_groups=True, use_split_objects=True, use_split_groups=False, use_groups_as_vgroups=False, use_image_search=True, split_mode='ON', global_clight_size=0.0, axis_forward='-Z', axis_up='Y')
 
-current = bpy.data.objects['Suzanne']
+# lod_0 = bpy.data.objects[0]
+lod_0 = bpy.data.objects['Suzanne']
+lod_0.name = 'Suzanne_LOD_0'
 
-current.select_set(True)
+lod_0.select_set(True)
+view_layer.objects.active = lod_0
 
-view_layer.objects.active = current
+# print(bpy.context.object)
 
-print(bpy.context.object)
+for i in range(1,4):
+	bpy.ops.object.duplicate()
+	bpy.context.object.name = 'Suzanne_LOD_{0}'.format(i)
+	# print(bpy.context.object)
+	# print(lod_0.name)
+	bpy.ops.object.modifier_add(type='DECIMATE')
+	bpy.context.object.modifiers['Decimate'].ratio = 0.5
+	bpy.ops.object.modifier_apply(apply_as='DATA', modifier='Decimate')
 
-bpy.ops.object.modifier_add(type='DECIMATE')
 
-print(bpy.context.object)
+bpy.ops.object.select_all(action='DESELECT')
+for obj in bpy.data.objects:
+	
+	obj.select_set(True)
 
-print(bpy.context.object.modifiers['Decimate'].ratio)
+	# some exporters only use the active object
+	view_layer.objects.active = obj
 
-bpy.context.object.modifiers['Decimate'].ratio = 0.2
+	bpy.ops.export_scene.fbx(filepath=outputFolder + obj.name + ".fbx", use_selection=True)
 
-print(bpy.context.object.modifiers['Decimate'].ratio)
+	print("Exporting: " + obj.name)
 
-bpy.ops.object.modifier_apply(apply_as='DATA', modifier='Decimate')
-
-bpy.ops.export_scene.fbx(filepath=r"D:\Technic\Repositories\mc2unity\results\out.fbx", use_selection=True)
+	obj.select_set(False)
 
 
 
@@ -48,13 +61,6 @@ bpy.ops.export_scene.fbx(filepath=r"D:\Technic\Repositories\mc2unity\results\out
 # print(bpy.data.objects[1].modifier_add(type='DECIMATE'))
 
 # print(mesh.name)
-
-
-# needs to make relevant object active first.
-# bpy.ops.object.modifier_add(type='SUBSURF')
-# bpy.ops.object.modifier_apply(apply_as='DATA', modifier='Subsurf')
-# bpy.ops.object.modifier_add(type='SUBSURF')
-# bpy.context.object.modifiers['Subsurf'].levels = 2
 
 time.sleep(2)
 
