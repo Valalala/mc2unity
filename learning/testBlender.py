@@ -2,6 +2,36 @@
 import bpy
 import time
 
+
+view_layer = bpy.context.view_layer
+
+# bpy.ops.import_scene.obj('D:\Technic\Repositories\mc2unity\models\Suzanne.obj')
+bpy.ops.import_scene.obj(filepath=r"D:\Technic\Repositories\mc2unity\models\Suzanne.obj", filter_glob="*.obj;*.mtl", use_edges=True, use_smooth_groups=True, use_split_objects=True, use_split_groups=False, use_groups_as_vgroups=False, use_image_search=True, split_mode='ON', global_clight_size=0.0, axis_forward='-Z', axis_up='Y')
+
+current = bpy.data.objects['Suzanne']
+
+current.select_set(True)
+
+view_layer.objects.active = current
+
+print(bpy.context.object)
+
+bpy.ops.object.modifier_add(type='DECIMATE')
+
+print(bpy.context.object)
+
+print(bpy.context.object.modifiers['Decimate'].ratio)
+
+bpy.context.object.modifiers['Decimate'].ratio = 0.2
+
+print(bpy.context.object.modifiers['Decimate'].ratio)
+
+bpy.ops.object.modifier_apply(apply_as='DATA', modifier='Decimate')
+
+bpy.ops.export_scene.fbx(filepath=r"D:\Technic\Repositories\mc2unity\results\out.fbx", use_selection=True)
+
+
+
 # mcWorld = input('Enter Minecraft world path: ')
 
 # terrainTex = input('Enter Mineways terrain file path: ')
