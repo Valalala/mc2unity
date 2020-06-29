@@ -25,7 +25,7 @@ This project automates the process of converting Minecraft worlds into assets fo
 
 ### Built With
 * [Mineways](http://www.realtimerendering.com/erich/minecraft/public/mineways/)
-* [Blender]https://www.blender.org)
+* [Blender](https://www.blender.org)
 * [Unity](https://unity.com) 
 
 
