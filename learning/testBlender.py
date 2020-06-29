@@ -1,12 +1,23 @@
+# testBlender.py
+# Walter Rasmussen
+# Testing code for a project that converts Minecraft worlds to Unity.
 
 import bpy
+import bmesh
 import time
 
+
+###### Setup ######
+# disolveMaterials = {'oak_leaves', 'birch_leaves', 'water_still'}
+transparentMaterials = {'water_still'}
+cutoutMaterials = {'grass', 'oak_leaves', 'birch_leaves', 'dandelion', 'poppy', 'sugar_cane'}
 
 outputFolder = r"D:\Technic\Repositories\mc2unity\results\\"
 
 view_layer = bpy.context.view_layer
 
+
+###### Import ######
 # bpy.ops.import_scene.obj('D:\Technic\Repositories\mc2unity\models\Suzanne.obj')
 bpy.ops.import_scene.obj(filepath=r"D:\Technic\Repositories\mc2unity\models\Suzanne.obj", filter_glob="*.obj;*.mtl", use_edges=True, use_smooth_groups=True, use_split_objects=True, use_split_groups=False, use_groups_as_vgroups=False, use_image_search=True, split_mode='ON', global_clight_size=0.0, axis_forward='-Z', axis_up='Y')
 
@@ -17,31 +28,120 @@ lod_0.name = 'Suzanne_LOD_0'
 lod_0.select_set(True)
 view_layer.objects.active = lod_0
 
-# print(bpy.context.object)
-
-for i in range(1,4):
-	bpy.ops.object.duplicate()
-	bpy.context.object.name = 'Suzanne_LOD_{0}'.format(i)
-	# print(bpy.context.object)
-	# print(lod_0.name)
-	bpy.ops.object.modifier_add(type='DECIMATE')
-	bpy.context.object.modifiers['Decimate'].ratio = 0.5
-	bpy.ops.object.modifier_apply(apply_as='DATA', modifier='Decimate')
 
 
-bpy.ops.object.select_all(action='DESELECT')
+###### MAIN ######
+
+fixAlpha()
+
+bpy.ops.mesh.remove_doubles()
+bpy.ops.mesh.separate(type='MATERIAL')
+
+bpy.ops.mesh.select_all(action='DESELECT')
 for obj in bpy.data.objects:
-	
 	obj.select_set(True)
-
-	# some exporters only use the active object
 	view_layer.objects.active = obj
-
-	bpy.ops.export_scene.fbx(filepath=outputFolder + obj.name + ".fbx", use_selection=True)
-
-	print("Exporting: " + obj.name)
-
+	fixUVs()
 	obj.select_set(False)
+
+bpy.ops.mesh.select_all(action='SELECT')
+bpy.ops.object.join()
+bpy.ops.mesh.remove_doubles()
+bpy.ops.export_scene.fbx(filepath=outputFolder + "test" + ".fbx", use_selection=True)
+
+
+
+###### Alpha ######
+def fixAlpha():
+
+	for name in cutoutMaterials:
+		if name not in bpy.data.materials.keys():
+			continue
+		mat = bpy.data.materials[name]
+		mat.blend_method = 'CLIP'
+		socket_in = mat.node_tree.nodes['Principled BSDF'].inputs['Alpha']
+		socket_out = mat.node_tree.nodes['Image Texture'].outputs['Alpha']
+		mat.node_tree.links.new(socket_in, socket_out)
+
+	for name in transparentMaterials:
+		if name not in bpy.data.materials.keys():
+			continue
+		mat = bpy.data.materials[name]
+		mat.blend_method = 'BLEND'
+		socket_in = mat.node_tree.nodes['Principled BSDF'].inputs['Alpha']
+		socket_out = mat.node_tree.nodes['Image Texture'].outputs['Alpha']
+		mat.node_tree.links.new(socket_in, socket_out)
+	
+
+###### UV edit ######
+def fixUVs():
+
+	# Get the active mesh
+	me = bpy.context.object.data
+
+	# Cube projection
+	bpy.ops.object.mode_set(mode = 'EDIT')
+	bpy.ops.mesh.select_all(action='SELECT')
+	bpy.ops.mesh.dissolve_limited()
+	bpy.ops.uv.cube_project(cube_size=2, correct_aspect=False)
+	bpy.ops.object.mode_set(mode = 'OBJECT')
+
+	# Get a BMesh representation
+	bm = bmesh.new()   # create an empty BMesh
+	bm.from_mesh(me)   # fill it in from a Mesh
+
+	uv_layer = bm.loops.layers.uv.verify()
+
+	bm.faces.ensure_lookup_table()
+	uv_offset = bm.faces[0].loops[0][uv_layer].uv.xy
+
+	for f in bm.faces:
+		# Offset must be per face because cube projection can give non whole number values
+		uv_offset.x = f.loops[0][uv_layer].uv.x - round(f.loops[0][uv_layer].uv.x)
+		uv_offset.y = f.loops[0][uv_layer].uv.y - round(f.loops[0][uv_layer].uv.y)
+		for loop in f.loops:
+			loop_uv = loop[uv_layer]
+			# align to zero
+			loop_uv.uv = loop_uv.uv + uv_offset
+			if(f.normal.x == 1 or f.normal.x == -1):
+				# 90 deg turn then mirror
+				loop_uv.uv = (loop_uv.uv.y, loop_uv.uv.x)
+			if(f.normal.y == 1 or f.normal.y == -1):
+				# virtical flip
+				loop_uv.uv = (-loop_uv.uv.x, loop_uv.uv.y)
+
+
+	# Finish up, write the bmesh back to the mesh
+	bm.to_mesh(me)
+	bm.free()  # free and prevent further access
+
+
+
+
+
+# for i in range(1,4):
+# 	bpy.ops.object.duplicate()
+# 	bpy.context.object.name = 'Suzanne_LOD_{0}'.format(i)
+# 	# print(bpy.context.object)
+# 	# print(lod_0.name)
+# 	bpy.ops.object.modifier_add(type='DECIMATE')
+# 	bpy.context.object.modifiers['Decimate'].ratio = 0.5
+# 	bpy.ops.object.modifier_apply(apply_as='DATA', modifier='Decimate')
+
+
+# bpy.ops.object.select_all(action='DESELECT')
+# for obj in bpy.data.objects:
+	
+# 	obj.select_set(True)
+
+# 	# some exporters only use the active object
+# 	view_layer.objects.active = obj
+
+# 	bpy.ops.export_scene.fbx(filepath=outputFolder + obj.name + ".fbx", use_selection=True)
+
+# 	print("Exporting: " + obj.name)
+
+# 	obj.select_set(False)
 
 
 
@@ -82,6 +182,7 @@ time.sleep(2)
 # http://www.realtimerendering.com/erich/minecraft/public/mineways/scripting.html
 # https://docs.blender.org/api/current/bpy.ops.import_scene.html?highlight=import#module-bpy.ops.import_scene
 # https://docs.blender.org/api/current/bpy.ops.export_scene.html?highlight=export#module-bpy.ops.export_scene
+# https://docs.blender.org/api/2.82/bmesh.html
 # https://medium.com/@behreajj/creative-coding-in-blender-a-primer-53e79ff71e
 
 
