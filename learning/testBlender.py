@@ -7,70 +7,29 @@ import bmesh
 import time
 
 
-###### Setup ######
-# disolveMaterials = {'oak_leaves', 'birch_leaves', 'water_still'}
-transparentMaterials = {'water_still'}
-cutoutMaterials = {'grass', 'oak_leaves', 'birch_leaves', 'dandelion', 'poppy', 'sugar_cane'}
-
-outputFolder = r"D:\Technic\Repositories\mc2unity\results\\"
-
-view_layer = bpy.context.view_layer
-
-
-###### Import ######
-# bpy.ops.import_scene.obj('D:\Technic\Repositories\mc2unity\models\Suzanne.obj')
-bpy.ops.import_scene.obj(filepath=r"D:\Technic\Repositories\mc2unity\models\Suzanne.obj", filter_glob="*.obj;*.mtl", use_edges=True, use_smooth_groups=True, use_split_objects=True, use_split_groups=False, use_groups_as_vgroups=False, use_image_search=True, split_mode='ON', global_clight_size=0.0, axis_forward='-Z', axis_up='Y')
-
-# lod_0 = bpy.data.objects[0]
-lod_0 = bpy.data.objects['Suzanne']
-lod_0.name = 'Suzanne_LOD_0'
-
-lod_0.select_set(True)
-view_layer.objects.active = lod_0
-
-
-
-###### MAIN ######
-
-fixAlpha()
-
-bpy.ops.mesh.remove_doubles()
-bpy.ops.mesh.separate(type='MATERIAL')
-
-bpy.ops.mesh.select_all(action='DESELECT')
-for obj in bpy.data.objects:
-	obj.select_set(True)
-	view_layer.objects.active = obj
-	fixUVs()
-	obj.select_set(False)
-
-bpy.ops.mesh.select_all(action='SELECT')
-bpy.ops.object.join()
-bpy.ops.mesh.remove_doubles()
-bpy.ops.export_scene.fbx(filepath=outputFolder + "test" + ".fbx", use_selection=True)
-
-
 
 ###### Alpha ######
+# Only useful when viewing the file in blender.
 def fixAlpha():
+# Note: mineways has a blender script, details texture and material import.
 
-	for name in cutoutMaterials:
+	for name in [s.lower() for s in transparentBlocks]:
 		if name not in bpy.data.materials.keys():
 			continue
-		mat = bpy.data.materials[name]
-		mat.blend_method = 'CLIP'
-		socket_in = mat.node_tree.nodes['Principled BSDF'].inputs['Alpha']
-		socket_out = mat.node_tree.nodes['Image Texture'].outputs['Alpha']
-		mat.node_tree.links.new(socket_in, socket_out)
+		# print(name)
 
-	for name in transparentMaterials:
-		if name not in bpy.data.materials.keys():
-			continue
-		mat = bpy.data.materials[name]
-		mat.blend_method = 'BLEND'
-		socket_in = mat.node_tree.nodes['Principled BSDF'].inputs['Alpha']
-		socket_out = mat.node_tree.nodes['Image Texture'].outputs['Alpha']
-		mat.node_tree.links.new(socket_in, socket_out)
+		bpy.data.materials[name].blend_method = 'BLEND'
+		bpy.data.materials[name].shadow_method = 'HASHED'
+		socket_in = bpy.data.materials[name].node_tree.nodes['Principled BSDF'].inputs['Alpha']
+		socket_out = bpy.data.materials[name].node_tree.nodes['Image Texture'].outputs['Alpha']
+		bpy.data.materials[name].node_tree.links.new(socket_in, socket_out)
+
+		# mat = bpy.data.materials[name]
+		# mat.blend_method = 'BLEND'
+		# mat.shadow_method = 'HASHED'
+		# socket_in = mat.node_tree.nodes['Principled BSDF'].inputs['Alpha']
+		# socket_out = mat.node_tree.nodes['Image Texture'].outputs['Alpha']
+		# mat.node_tree.links.new(socket_in, socket_out)
 	
 
 ###### UV edit ######
@@ -117,6 +76,66 @@ def fixUVs():
 
 
 
+
+###### Setup ######
+# disolveMaterials = {'oak_leaves', 'birch_leaves', 'water_still'}
+# transparentMaterials = {'water_still'}
+# cutoutMaterials = {'grass', 'oak_leaves', 'birch_leaves', 'dandelion', 'poppy', 'sugar_cane'}
+
+# Use Mineway's [block test world] to check/complete the list
+#List of transparent blocks
+transparentBlocks = ["Acacia_Leaves","Dark_Oak_Leaves","Acacia_Door","Activator_Rail","Bed","Beetroot_Seeds","Birch_Door","Brewing_Stand","Cactus","Carrot","Carrots","Cauldron","Chorus_Flower","Chorus_Flower_Dead","Chorus_Plant","Cobweb",
+    "Cocoa","Crops","Dandelion","Dark_Oak_Door","Dead_Bush","Detector_Rail","Enchantment_Table","Glass","Glass_Pane","Grass","Iron_Bars","Iron_Door","Iron_Trapdoor","Jack_o'Lantern","Jungle_Door","Large_Flowers",
+    "Leaves","Melon_Stem","Monster_Spawner","Nether_Portal","Nether_Wart","Oak_Leaves","Oak_Sapling","Poppy","Potato","Potatoes","Powered_Rail","Pumpkin_Stem","Rail","Red_Mushroom",
+    "Redstone_Comparator_(inactive)","Redstone_Torch_(inactive)","Repeater_(inactive)","Sapling","Spruce_Door","Stained_Glass_Pane","Sugar_Cane","Sunflower","Tall_Grass","Trapdoor","Vines","Wheat","Wooden_Door"]
+#List of light emitting blocks
+lightBlocks = ["Daylight_Sensor","End_Gateway","End_Portal","Ender_Chest","Flowing_Lava","Glowstone","Inverted_Daylight_Sensor","Lava","Magma_Block","Redstone_Lamp_(active)","Stationary_Lava","Sea_Lantern"]
+#List of light emitting and transparent block
+lightTransparentBlocks = ["Beacon","Brown_Mushroom","Dragon_Egg","Endframe","End_Rod","Fire","Powered_Rail_(active)","Redstone_Comparator_(active)","Redstone_Torch_(active)","Repeater_(active)","Torch"]
+
+
+outputFolder = r"D:\Technic\Repositories\mc2unity\results\\"
+
+view_layer = bpy.context.view_layer
+
+
+###### Import ######
+# bpy.ops.import_scene.obj('D:\Technic\Repositories\mc2unity\models\Suzanne.obj')
+bpy.ops.import_scene.obj(filepath=r"D:\Technic\Repositories\mc2unity\models\skylands.obj", filter_glob="*.obj;*.mtl", use_edges=True, use_smooth_groups=True, use_split_objects=True, use_split_groups=False, use_groups_as_vgroups=False, use_image_search=True, split_mode='ON', global_clight_size=0.0, axis_forward='-Z', axis_up='Y')
+
+lod_0 = bpy.data.objects[0]
+# lod_0 = bpy.data.objects['Suzanne']
+# lod_0.name = 'Suzanne_LOD_0'
+
+lod_0.select_set(True)
+view_layer.objects.active = lod_0
+
+
+
+###### MAIN ######
+
+# fixAlpha()
+
+bpy.ops.object.mode_set(mode = 'EDIT')
+bpy.ops.mesh.remove_doubles()
+bpy.ops.mesh.separate(type='MATERIAL')
+bpy.ops.object.mode_set(mode = 'OBJECT')
+
+bpy.ops.object.select_all(action='DESELECT')
+for obj in bpy.data.objects:
+	obj.select_set(True)
+	view_layer.objects.active = obj
+	# Should only occur for full blocks
+	fixUVs()
+	obj.select_set(False)
+
+bpy.ops.object.select_all(action='SELECT')
+bpy.ops.object.join()
+bpy.ops.object.mode_set(mode = 'EDIT')
+bpy.ops.mesh.remove_doubles()
+bpy.ops.object.mode_set(mode = 'OBJECT')
+bpy.ops.export_scene.fbx(filepath=outputFolder + "test" + ".fbx", use_selection=True)
+# bpy.ops.wm.save_mainfile()
 
 
 # for i in range(1,4):
